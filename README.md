@@ -15,7 +15,7 @@ Una aplicación básica de Flask que implementa operaciones CRUD (Crear, Leer, A
 - PyMySQL
 
 ## Operaciones CRUD
-**Añadir usuario**: Accede a http://localhost:5000/add_users para ver el formulario de creación.
-**Consultar usuarios**: Accede a http://localhost:5000/get_users para listar los usuarios.
-**Actualizar usuario**: Accede a http://localhost:5000/update_user para modificar un usuario existente.
-**Eliminar usuario**: Accede a http://localhost:5000/delete_one_user para eliminar un usuario específico, o a http://localhost:5000/delete_all_users para eliminar todos los usuarios.
+- **Añadir usuario**: Accede a http://localhost:5000/add_users para ver el formulario de creación.
+- **Consultar usuarios**: Accede a http://localhost:5000/get_users para listar los usuarios.
+- **Actualizar usuario**: Accede a http://localhost:5000/update_user para modificar un usuario existente.
+- **Eliminar usuario**: Accede a http://localhost:5000/delete_one_user para eliminar un usuario específico, o a http://localhost:5000/delete_all_users para eliminar todos los usuarios.
