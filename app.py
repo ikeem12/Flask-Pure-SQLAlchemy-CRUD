@@ -1,3 +1,5 @@
+import os
+
 from flask import  Flask, request
 from sqlalchemy import create_engine, Integer, String, select, delete, update
 from sqlalchemy.orm import sessionmaker, DeclarativeBase, mapped_column, Mapped
@@ -5,7 +7,7 @@ from contextlib import contextmanager
 
 app = Flask(__name__)
 
-engine = create_engine('mysql+pymysql://root:johancar12@localhost:3306/prueba_sqlalchemy', echo=True)
+engine= create_engine(os.getenv('DOCKER_DB_URL','mysql+pymysql://root:johancar12@localhost:3306/prueba_sqlalchemy'), echo=True)
 Session = sessionmaker(bind=engine)
 
 class Base(DeclarativeBase):
@@ -152,4 +154,4 @@ def update_user():
         '''
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0')

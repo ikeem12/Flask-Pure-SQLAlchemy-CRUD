@@ -1,0 +1,25 @@
+services:
+  db:
+    image: mysql:8.4
+    container_name: mysql-prueba_sqlachemy
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: prueba_sqlalchemy
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "3307:3306"
+
+  app:
+    image: prueba_sqlachemy
+    build: .
+    container_name: prueba_sqlachemy
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db
+    command: ["dockerize","-wait", "tcp://db:3306", "--timeout", "30s", "python", "app.py"]
+
+volumes:
+  db_data:
