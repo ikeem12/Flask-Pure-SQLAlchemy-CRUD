@@ -1,8 +1,8 @@
 import os
 
 from flask import  Flask, request
-from sqlalchemy import create_engine, Integer, String, select, delete, update
-from sqlalchemy.orm import sessionmaker, DeclarativeBase, mapped_column, Mapped
+from sqlalchemy import create_engine, Integer, String, select, delete, update, ForeignKey
+from sqlalchemy.orm import sessionmaker, DeclarativeBase, mapped_column, Mapped, relationship, selectinload
 from contextlib import contextmanager
 
 app = Flask(__name__)
@@ -18,6 +18,17 @@ class User(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     username: Mapped[str] = mapped_column(String(80), unique=True, nullable=False)
     email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
+
+    post: Mapped[list['Post']] = relationship("Post", back_populates="user", lazy='selectin')
+
+class Post(Base):
+    __tablename__ = 'posts'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    title: Mapped[str] = mapped_column(String(80), unique=True, nullable=False)
+    content: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey('users.id'))
+
+    user: Mapped[User] = relationship("User", back_populates="post")
 
 Base.metadata.create_all(engine)
 
@@ -57,7 +68,29 @@ def add_user():
         </form>
         '''
 
-@app.route('/get_users')
+@app.route('/add_post', methods=['GET','POST'])
+def add_post():
+    if request.method == 'POST':
+        title = request.form.get('title')
+        content = request.form.get('content')
+        user_id = request.form.get('user_id')
+
+        with get_session() as session:
+            new_post = Post(title=title, content=content, user_id=user_id)
+            session.add(new_post)
+        return f"Post added: {title}!"
+    else:
+        # Muestra un formulario HTML simple para añadir posts
+        return '''
+        <form method="POST">
+            Title: <input type="text" name="title"><br>
+            Content: <input type="text" name="content"><br>
+            user_id: <input type="text" name="user_id"><br>
+            <input type="submit" value="Add Post">
+        </form>
+        '''
+
+@app.route('/get_users', methods=['GET'])
 def get_users():
     with get_session() as session:
         stmt = select(User)
@@ -67,6 +100,27 @@ def get_users():
             for user in users
         ]
     return "<br>".join([f"Username: {u['username']}, Email: {u['email']}" for u in users_list])
+
+@app.route('/get_user_with_post', methods=['GET','POST'])
+def get_user_with_post():
+    if request.method == 'POST':
+        username = request.form.get('username')
+
+        with get_session() as session:
+            stmt = select(User).where(User.username == username).options(selectinload(User.post))   
+            user = session.execute(stmt).scalar_one_or_none()
+            if user:
+                posts = [f"Title: {post.title}, Content: {post.content}" for post in user.post]
+                return f"Username: {user.username}, Email: {user.email}<br>Posts:<br>" + "<br>".join(posts)
+            else:
+                return f"User {username} not found!"
+    else:
+        return '''
+        <form method="POST">
+            Username: <input type="text" name="username"><br>
+            <input type="submit" value="Get User">
+        </form>
+        '''
 
 @app.route('/delete_all_users')
 def delete_all_users():
