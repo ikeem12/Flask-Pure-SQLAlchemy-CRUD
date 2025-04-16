@@ -1,7 +1,7 @@
 import os
 
 from flask import  Flask, request
-from sqlalchemy import create_engine, Integer, String, select, delete, update, ForeignKey
+from sqlalchemy import create_engine, Integer, String, select, delete, update, ForeignKey, Table, Column
 from sqlalchemy.orm import sessionmaker, DeclarativeBase, mapped_column, Mapped, relationship, selectinload
 from contextlib import contextmanager
 
@@ -13,6 +13,13 @@ Session = sessionmaker(bind=engine)
 class Base(DeclarativeBase):
     pass
 
+followers = Table(
+    'followers', 
+    Base.metadata,
+    Column('follower_id', Integer, ForeignKey('users.id'), primary_key=True),
+    Column('followed_id', Integer, ForeignKey('users.id'), primary_key=True)
+)
+
 class User(Base):
     __tablename__ = 'users'
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -20,6 +27,24 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
 
     post: Mapped[list['Post']] = relationship("Post", back_populates="user", lazy='selectin')
+
+    following: Mapped[list['User']] = relationship(
+        'User',
+        secondary=followers,
+        primaryjoin=(followers.c.follower_id == id),
+        secondaryjoin=(followers.c.followed_id == id),
+        back_populates="followers",
+        lazy='selectin'
+    )
+
+    followers: Mapped[list['User']] = relationship(
+        'User',
+        secondary=followers,
+        primaryjoin=(followers.c.followed_id == id),
+        secondaryjoin=(followers.c.follower_id == id),
+        back_populates="following",
+        lazy='selectin'
+    )
 
 class Post(Base):
     __tablename__ = 'posts'
@@ -122,6 +147,90 @@ def get_user_with_post():
         </form>
         '''
 
+@app.route('/follow_friend', methods=['GET','POST'])
+def follow_friend():
+    if request.method == 'POST':
+        follower_username = request.form.get('follower_username')
+        followed_username = request.form.get('followed_username')
+
+        with get_session() as session:
+            follower_stmt = select(User).where(User.username == follower_username)
+            followed_stmt = select(User).where(User.username == followed_username)
+
+            follower = session.execute(follower_stmt).scalar_one_or_none()
+            followed = session.execute(followed_stmt).scalar_one_or_none()
+
+            if follower and followed:
+                if follower.id == followed.id:
+                    return "You cannot follow yourself!"
+                
+                if followed in follower.following:
+                    return f"{follower.username} is already following {followed.username}!"
+                
+                follower.following.append(followed)
+                return f"{follower.username} is now following {followed.username}!"
+            else:
+                return "One or both users not found!"
+    else:
+        return '''
+        <form method="POST">
+            Follower Username: <input type="text" name="follower_username"><br>
+            Followed Username: <input type="text" name="followed_username"><br>
+            <input type="submit" value="Follow Friend">
+        </form>
+        '''
+
+@app.route('/user/following', methods=['GET','POST'])
+def following():
+    if request.method == 'POST':
+        username = request.form.get('username')
+
+        with get_session() as session:
+            stm = select(User).where(User.username == username).options(selectinload(User.following))
+            user = session.execute(stm).scalar_one_or_none()
+            
+            if user:
+                followed = [following.username for following in user.following]
+                if followed:
+                    return f"{user.username} follows {', '.join(followed)}"
+                else:
+                    return f"{user.username} does not follow anyone"
+            else:
+                return f"User {username} not found!"
+    else:
+        return '''
+        <form method="POST">
+            Username: <input type="text" name="username"><br>
+            <input type="submit" value="Get User">
+        </form>
+        '''
+
+@app.route('/user/followers', methods=['GET','POST'])
+def follower():
+    if request.method == 'POST':
+        username = request.form.get('username')
+
+        with get_session() as session:
+            stmt = select(User).where(User.username == username).options(selectinload(User.followers))
+            user = session.execute(stmt).scalar_one_or_none()
+            
+            if user:
+                followers = [follower.username for follower in user.followers]
+                if followers:
+                    return f"{', '.join(followers)} has {user.username} "
+                else:
+                    return f"{user.username} has no followers"
+            else:
+                return f"User {username} not found!"
+    else:
+        return '''
+        <form method="POST">
+            Username: <input type="text" name="username"><br>
+            <input type="submit" value="Get User">
+        </form>
+        '''
+
+
 @app.route('/delete_all_users')
 def delete_all_users():
     with get_session() as session:
@@ -208,4 +317,4 @@ def update_user():
         '''
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0')
+    app.run(host='0.0.0.0', debug=True)
