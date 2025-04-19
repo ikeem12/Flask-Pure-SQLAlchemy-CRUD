@@ -2,7 +2,7 @@ import os
 
 from flask import  Flask, request
 from sqlalchemy import create_engine, Integer, String, select, delete, update, ForeignKey, Table, Column
-from sqlalchemy.orm import sessionmaker, DeclarativeBase, mapped_column, Mapped, relationship, selectinload
+from sqlalchemy.orm import sessionmaker, DeclarativeBase, mapped_column, Mapped, relationship, selectinload,noload, contains_eager
 from contextlib import contextmanager
 
 app = Flask(__name__)
@@ -26,7 +26,7 @@ class User(Base):
     username: Mapped[str] = mapped_column(String(80), unique=True, nullable=False)
     email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
 
-    post: Mapped[list['Post']] = relationship("Post", back_populates="user", lazy='selectin')
+    post: Mapped[list['Post']] = relationship("Post", back_populates="user")
 
     following: Mapped[list['User']] = relationship(
         'User',
@@ -118,6 +118,7 @@ def add_post():
 @app.route('/get_users', methods=['GET'])
 def get_users():
     with get_session() as session:
+        # Cargar todos los usuarios sin cargar los posts
         stmt = select(User)
         users = session.execute(stmt).scalars().all()
         users_list = [
@@ -132,7 +133,7 @@ def get_user_with_post():
         username = request.form.get('username')
 
         with get_session() as session:
-            stmt = select(User).where(User.username == username).options(selectinload(User.post))   
+            stmt = select(User).where(User.username == username).options(selectinload(User.post))
             user = session.execute(stmt).scalar_one_or_none()
             if user:
                 posts = [f"Title: {post.title}, Content: {post.content}" for post in user.post]
@@ -186,7 +187,7 @@ def following():
         username = request.form.get('username')
 
         with get_session() as session:
-            stm = select(User).where(User.username == username).options(selectinload(User.following))
+            stm = select(User).where(User.username == username)
             user = session.execute(stm).scalar_one_or_none()
             
             if user:
@@ -211,13 +212,13 @@ def follower():
         username = request.form.get('username')
 
         with get_session() as session:
-            stmt = select(User).where(User.username == username).options(selectinload(User.followers))
+            stmt = select(User).where(User.username == username)
             user = session.execute(stmt).scalar_one_or_none()
             
             if user:
                 followers = [follower.username for follower in user.followers]
                 if followers:
-                    return f"{', '.join(followers)} has {user.username} "
+                    return f"{', '.join(followers)} follows {user.username} "
                 else:
                     return f"{user.username} has no followers"
             else:
