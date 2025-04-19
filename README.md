@@ -14,17 +14,13 @@ Esta es una aplicación sencilla desarrollada con Flask que lleva a cabo operaci
 - SQLAlchemy
 - MySQL
 - PyMySQL
-- Docker & Dockerize
-
-## Dockerize
-La imagen de Docker de la aplicación hace uso de **Dockerize** para asegurarse de que el servicio de MySQL esté en funcionamiento antes de que la aplicación Flask comience. Esto se logra al añadir un comando de espera en el Dockerfile o en el archivo de configuración de Docker Compose, por ejemplo:
-
-```dockerfile
-CMD ["dockerize","-wait", "tcp://db:3306", "--timeout", "30s"]
-```
 
 ## Operaciones CRUD
 - **Añadir usuario**: Accede a http://localhost:5000/add_users para ver el formulario de creación.
 - **Consultar usuarios**: Accede a http://localhost:5000/get_users para listar los usuarios.
+- **Consultar posts**:  Accede a http://localhost:5000/get_user_with_post para ver los post de un usuario
+- **Seguir a un amigo** :  Accede a http://localhost:5000/follow_friend para seguir a un usuario
+- **Consultar usuarios seguidosr**: Accede a http://localhost:5000/user/following para ver la lista de usuarios que un usuario sigue
+- **Consultar seguidores de un usuario**: Accede a http://localhost:5000/user/followers para ver la lista de usuarios que siguen a un usuario específico.
 - **Actualizar usuario**: Accede a http://localhost:5000/update_user para modificar un usuario existente.
-- **Eliminar usuario**: Accede a http://localhost:5000/delete_one_user para eliminar un usuario específico, o a http://localhost:5000/delete_all_users para eliminar todos los usuarios.
+- **Eliminar usuario**: Accede a http://localhost:5000/delete_one_user para eliminar un usuario específico, o a **http://localhost:5000/delete_all_users** para eliminar todos los usuarios.
