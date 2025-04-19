@@ -15,6 +15,13 @@ Esta es una aplicación sencilla desarrollada con Flask que lleva a cabo operaci
 - MySQL
 - PyMySQL
 
+## Dockerize
+La imagen de Docker de la aplicación hace uso de **Dockerize** para asegurarse de que el servicio de MySQL esté en funcionamiento antes de que la aplicación Flask comience. Esto se logra al añadir un comando de espera en el Dockerfile o en el archivo de configuración de Docker Compose, por ejemplo:
+
+```dockerfile
+CMD ["dockerize","-wait", "tcp://db:3306", "--timeout", "30s"]
+```
+
 ## Operaciones CRUD
 - **Añadir usuario**: Accede a http://localhost:5000/add_users para ver el formulario de creación.
 - **Consultar usuarios**: Accede a http://localhost:5000/get_users para listar los usuarios.
